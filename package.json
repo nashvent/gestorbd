@@ -1,7 +1,7 @@
 {
-  "name": "electron-quick-start",
+  "name": "gestor-bd",
   "version": "1.0.0",
-  "description": "A minimal Electron application",
+  "description": "Gestor de base de datos",
   "main": "main.js",
   "scripts": {
     "start": "electron ."
@@ -14,8 +14,7 @@
     "tutorial",
     "demo"
   ],
-  "author": "GitHub",
-  "license": "CC0-1.0",
+  "author": "nashvent",
   "devDependencies": {
     "electron": "^5.0.0"
   },
