@@ -35,6 +35,7 @@ function renderizar_tabla(columnas,datos){
 class Gestor {
     constructor() {
         this.cargarTablas();
+        this._rexp=/\(([^)]+)\)/g;
     }
 
     cargarTablas(){
@@ -56,9 +57,30 @@ class Gestor {
         }});*/    
     }
 
+    obtenerColumnas(tabla){
+        var ncols=[];
+        var tablaTemp=this.obtenerTabla(tabla);
+        if(tablaTemp!=null){
+            for(var ncol in tablaTemp.columnas){
+                ncols.push(tablaTemp.columnas[ncol].nombre);
+            }
+        }
+        return ncols;
+    }
+
+    obtenerTabla(tabla){
+        for(let tobj in this._tablas.tablas){
+            var tabtemp=this._tablas.tablas[tobj];
+            if(tabtemp.nombre==tabla){
+                return tabtemp;
+            }
+        }
+        return null;
+    }
+
+
     crear_tabla(datos){
-        var regExp = /\(([^)]+)\)/g;
-        var matches = datos.match(regExp);
+        var matches = datos.match(this._rexp);
         var str = matches[0];
         str = str.substring(1, str.length - 1)
         var columnas=[];        
@@ -75,38 +97,66 @@ class Gestor {
         fs.writeFile('data/'+nombreTabla+'.txt', '[]', 'utf8',  function(err) {
             if (err) throw err;
         });
-        /*
-        CREA_TABLA NOMTABLA (NOM_COL1, INT; NOM_COL2, VARCHAR 15)
-
-        
-        var obj = {
-            tables: []
-         };
-        obj.tables.push({
-            nombre: "tabla1", 
-            columnas:[
-                {nombre:"col1",tipo:"VARCHAR",size:4},
-                {nombre:"col2",tipo:"INT"}
-            ] 
-        });*/
-    
-        /*
-        var json = JSON.stringify(tablas);
-        fs.writeFile('myjsonfile.json', json, 'utf8',  function(err) {
-            if (err) throw err;
-            console.log('complete');
-            });*/
     }
 
-
+    crearObj(col,data){
+        var obj={};
+        for(var i in col){
+            var ncol=col[i].trim();
+            var find = "'";
+            var re = new RegExp(find, 'g');
+            var ndata=data[i].replace(re, "");
+            obj[ncol]=ndata;
+        }
+        return obj;
+    }
 
     
     insertar(datos){
-        console.log("Crea tabla");
+        var nombreTabla=(datos.split(" "))[1];
+        var tempTab = fs.readFileSync('data/'+nombreTabla+'.txt').toString();
+        tempTab = JSON.parse(tempTab);
+        
+        var matches = datos.match(this._rexp);
+        var str = matches[0]
+        str= str.substring(1, str.length - 1)
+        var tcolumnas=str.split(",");        
+        str = matches[1]
+        str= str.substring(1, str.length - 1)
+        var tdatos=str.split(",");
+        
+        tempTab.push(this.crearObj(tcolumnas,tdatos));
+        fs.writeFile('data/'+nombreTabla+'.txt',JSON.stringify(tempTab), 'utf8',  function(err) {
+            if (err) throw err;
+        });
     }
     
     seleccionar(datos){
-        console.log("Crea tabla");
+        var datSplit=datos.split(" ");
+        var nombreTabla=datSplit[3];
+        var operacion=datSplit[1];
+        var tablaTemp=this.obtenerTabla(nombreTabla);
+        if(tablaTemp!=null){
+            $("#nombreTabla").html(nombreTabla);
+            var tempTab = fs.readFileSync('data/'+nombreTabla+'.txt').toString();
+            tempTab = JSON.parse(tempTab);
+            var tcol=[];
+            if("*"==operacion){
+                tcol=this.obtenerColumnas(nombreTabla);
+            }
+            else{
+                tcol=operacion.split(",");
+            }
+            renderizar_tabla(tcol,tempTab);    
+        
+
+
+
+        }
+        else{
+            console.log("No existe tabla");
+        }
+
     }
     
     borrar(datos){
@@ -140,7 +190,6 @@ class Gestor {
                 if(tabtemp.nombre==nombreTabla){
                     fnd=1;
                     var keyNames = Object.keys(tabtemp.columnas[0]);
-                    console.log("Key names",keyNames);
                     renderizar_tabla(keyNames,tabtemp.columnas);
                     break;
                 }
@@ -152,9 +201,6 @@ class Gestor {
             else{
                 console.log("No encontrado");
             }
-
-            //var keyNames = Object.keys(this._tablas.tablas[nombreTabla]);
-            //console.log("keynames",keyNames);
         }
     }
     checkSentencia(texto){

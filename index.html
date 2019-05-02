@@ -14,7 +14,7 @@
             <div class="input-group-prepend">
               <span class="input-group-text" id="basic-addon1">Sentencia</span>
             </div>
-            <input type="text" class="form-control" id="sentencia" placeholder="CREA_TABLA ALUMNOS (ID, INT; NOMBRE, VARCHAR(15))" aria-label="Username" aria-describedby="basic-addon1">
+            <input type="text" class="form-control" id="sentencia" placeholder="CREA_TABLA estudiante (código,INT;nombre,VARCHAR 10)" aria-label="Username" aria-describedby="basic-addon1">
             <div class="input-group-append">
                 <button class="btn btn-secondary" type="button" id="ejecutar"  onclick="leerSentencia()">Ejecutar</button>
               </div>
@@ -22,6 +22,7 @@
           
       </div>
       <div class="container-fluid">
+        <p>Nombre tabla: <b><span id="nombreTabla"></span></b>  </p>
         <div class="row">
           <div class="col-10">
               <table class="table table-sm table-striped" id="resultado">
@@ -43,8 +44,8 @@
                 </table>
           </div>
           <div class="col-2">
-              <button type="button" class="btn btn-primary btn-block">Block level button</button>
-              <button type="button" class="btn btn-secondary btn-block">Block level button</button
+              <button type="button" class="btn btn-primary btn-block">Insertar masivo</button>
+              <button type="button" class="btn btn-danger btn-block">Limpiar</button>
           </div>
         </div> 
       </div>
