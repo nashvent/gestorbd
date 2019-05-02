@@ -7,63 +7,63 @@
     <link rel="stylesheet" href="css/bootstrap.min.css" >
   </head>
   <body>
-    <div class="container-fluid">
-        <h2>Gestor de Base de Datos</h2>
-        <div class="input-group mb-3">
-          <div class="input-group-prepend">
-            <span class="input-group-text" id="basic-addon1">Sentencia</span>
-          </div>
-          <input type="text" class="form-control" id="sentencia" placeholder="CREA_TABLA ALUMNOS (ID, INT; NOMBRE, VARCHAR(15))" aria-label="Username" aria-describedby="basic-addon1">
-          <div class="input-group-append">
-              <button class="btn btn-secondary" type="button" id="ejecutar"  onclick="leerSentencia()">Ejecutar</button>
+    <div id="inicio">  
+      <div class="container-fluid">
+          <h2>Gestor de Base de Datos</h2>
+          <div class="input-group mb-3">
+            <div class="input-group-prepend">
+              <span class="input-group-text" id="basic-addon1">Sentencia</span>
             </div>
-        </div>
-        
+            <input type="text" class="form-control" id="sentencia" placeholder="CREA_TABLA ALUMNOS (ID, INT; NOMBRE, VARCHAR(15))" aria-label="Username" aria-describedby="basic-addon1">
+            <div class="input-group-append">
+                <button class="btn btn-secondary" type="button" id="ejecutar"  onclick="leerSentencia()">Ejecutar</button>
+              </div>
+          </div>
+          
+      </div>
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-10">
+              <table class="table table-sm table-striped" id="resultado">
+                  <thead class="thead-dark">
+                    <tr>
+                      <th scope="col">#</th>
+                      
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">1</th>
+                    </tr>
+                    <tr>
+                      <th scope="row">2</th>
+                    </tr>
+                    
+                  </tbody>
+                </table>
+          </div>
+          <div class="col-2">
+              <button type="button" class="btn btn-primary btn-block">Block level button</button>
+              <button type="button" class="btn btn-secondary btn-block">Block level button</button
+          </div>
+        </div> 
+      </div>
     </div>
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-10">
-            <table class="table table-sm table-striped">
-                <thead class="thead-dark">
-                  <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">First</th>
-                    <th scope="col">Last</th>
-                    <th scope="col">Handle</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <th scope="row">1</th>
-                    <td>Mark</td>
-                    <td>Otto</td>
-                    <td>@mdo</td>
-                  </tr>
-                  <tr>
-                    <th scope="row">2</th>
-                    <td>Jacob</td>
-                    <td>Thornton</td>
-                    <td>@fat</td>
-                  </tr>
-                  <tr>
-                    <th scope="row">3</th>
-                    <td>Larry</td>
-                    <td>the Bird</td>
-                    <td>@twitter</td>
-                  </tr>
-                </tbody>
-              </table>
-        </div>
-        <div class="col-2">
-            <button type="button" class="btn btn-primary btn-block">Block level button</button>
-            <button type="button" class="btn btn-secondary btn-block">Block level button</button
-        </div>
-      </div> 
-    </div>
-    <script src="js/app.js"></script>
 
     <script>
-      require('./renderer.js')
+        require('./renderer.js');
     </script>
+    <script>
+    var input = document.getElementById("sentencia");
+
+    input.addEventListener("keyup", function(event) {
+      if (event.keyCode === 13) {
+        event.preventDefault();
+        leerSentencia();
+      }
+    }); 
+  </script>
+    <script src="js/app.js"></script>
+
   </body>
 </html>

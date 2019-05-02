@@ -1,0 +1,1 @@
+{"tablas":[{"nombre":"matricula","columnas":[{"nombre":"id","tipo":"INT"},{"nombre":"curso","tipo":"varchar 15"}]}]}
