@@ -3,8 +3,19 @@
   <head>
     <meta charset="UTF-8">
 
-    <title>Gesto de base de datos!</title>
+    <title>Gestor de base de datos!</title>
     <link rel="stylesheet" href="css/bootstrap.min.css" >
+    <style>
+      #operaciones> tbody > tr >td{
+        cursor: pointer;
+
+      }
+      #operaciones> tbody > tr >td:hover{
+        background-color: white;
+        color: black;
+        
+      }
+    </style>
   </head>
   <body>
     <div id="inicio">  
@@ -14,7 +25,7 @@
             <div class="input-group-prepend">
               <span class="input-group-text" id="basic-addon1">Sentencia</span>
             </div>
-            <input type="text" class="form-control" id="sentencia" placeholder="CREA_TABLA estudiante (código,INT;nombre,VARCHAR 10)" aria-label="Username" aria-describedby="basic-addon1">
+            <input type="text" class="form-control" id="sentencia" placeholder="Escribe aqui" aria-label="Username" aria-describedby="basic-addon1">
             <div class="input-group-append">
                 <button class="btn btn-secondary" type="button" id="ejecutar"  onclick="leerSentencia()">Ejecutar</button>
               </div>
@@ -24,7 +35,7 @@
       <div class="container-fluid">
         <p>Nombre tabla: <b><span id="nombreTabla"></span></b>  </p>
         <div class="row">
-          <div class="col-10">
+          <div class="col-9">
               <table class="table table-sm table-striped" id="resultado">
                   <thead class="thead-dark">
                     <tr>
@@ -33,19 +44,38 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <th scope="row">1</th>
-                    </tr>
-                    <tr>
-                      <th scope="row">2</th>
-                    </tr>
-                    
+                   
                   </tbody>
                 </table>
           </div>
-          <div class="col-2">
-              <button type="button" class="btn btn-primary btn-block">Insertar masivo</button>
-              <button type="button" class="btn btn-danger btn-block">Limpiar</button>
+          <div class="col-3">
+            <table class="table table-dark" id="operaciones">
+              <thead>
+                <tr>
+                  <th scope="col">Operaciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td onclick="capturarSentencia(this)">VER tablas</td>
+                </tr>
+                <tr>
+                  <td onclick="capturarSentencia(this)">CREA_TABLA estudiante (codigo,INT;nombre,VARCHAR 10)</td>
+                </tr>
+                <tr>
+                  <td onclick="capturarSentencia(this)">INSERTA estudiante (codigo, nombre) VALORES (10, 'RENZO')</td>
+                </tr>
+                <tr>
+                  <td onclick="capturarSentencia(this)">SELECCIONA * DESDE estudiante  DONDE codigo = 2 AND nombre = 'renzo'</td>
+                </tr>
+                <tr>
+                  <td onclick="capturarSentencia(this)">BORRA estudiante DONDE codigo = 2</td>
+                </tr>
+                <tr>
+                  <td onclick="capturarSentencia(this)">GENERA estudiante 40000</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div> 
       </div>
@@ -63,6 +93,8 @@
         leerSentencia();
       }
     }); 
+
+    
   </script>
     <script src="js/app.js"></script>
 

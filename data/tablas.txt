@@ -1,1 +1,1 @@
-{"tablas":[{"nombre":"matricula","columnas":[{"nombre":"id","tipo":"INT"},{"nombre":"curso","tipo":"varchar 15"}]},{"nombre":"estudiante","columnas":[{"nombre":"codigo","tipo":"INT"},{"nombre":"nombre","tipo":"VARCHAR 10"}]}]}
+{"tablas":[{"nombre":"matricula","columnas":[{"nombre":"id","tipo":"INT"},{"nombre":"curso","tipo":"varchar 15"}]},{"nombre":"estudiante","columnas":[{"nombre":"codigo","tipo":"INT"},{"nombre":"nombre","tipo":"VARCHAR 10"}]},{"nombre":"profesor","columnas":[{"nombre":"codigo","tipo":"INT"},{"nombre":"nombre","tipo":"VARCHAR 20"}]}]}

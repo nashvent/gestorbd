@@ -5,10 +5,18 @@ const fs = require('fs');
 
 var gcol=["nombre","ncol"];
 
+function capturarSentencia(el){
+    //console.log(el.innerHTML);
+    $("#sentencia").val(el.innerHTML)
+}
+
 function renderizar_tabla(columnas,datos){
     $("#resultado").empty();
     var tag_tr='<thead class="thead-dark"><tr>';
-    columnas.unshift("#");
+    if(columnas[0]!="#"){
+        columnas.unshift("#");
+    }
+    
     for(var col in columnas){
         tag_tr=tag_tr+'<th scope="col">'+columnas[col]+'</th>';
     }
@@ -56,6 +64,98 @@ class Gestor {
             //fs.writeFile('myjsonfile.json', json, 'utf8', callback); 
         }});*/    
     }
+
+    checkOperador(a,b,op){
+        //console.log("a",a,"b",b,"op",op);
+        switch (op) {
+            case '=':
+                return a==b;
+            case '<':
+                return parseInt(a) < parseInt(b);
+            case '>':
+                return parseInt(a) > parseInt(b);
+            default:
+                return false;
+        }
+    }
+
+    //[ [col,op,val], [col,op,val] ]
+    checkCondicion(condiciones,data,oplogico){
+        var ndata=[];
+        var borrar=[];
+        for(var tdat of data){
+            var contCond=0;
+            for(var cond of condiciones){
+                //console.log("cond0",cond[0]);
+                if (this.checkOperador( tdat[cond[0]],cond[2],cond[1])){
+                   contCond+=1;
+                }
+            }
+            if( oplogico==null || oplogico.toLowerCase()=="or"){
+                if(contCond>0){
+                    ndata.push(tdat);
+                }
+            }
+            else if(oplogico.toLowerCase()=="and"){
+                if(contCond==condiciones.length){
+                    ndata.push(tdat);
+                }
+            }
+            
+        }
+        return ndata;
+    }
+
+    borrarCondicion(condiciones,data,oplogico){
+        var ndata=[];
+        for(var idat=0;idat<data.length;idat++){
+            var contCond=0;
+            for(var cond of condiciones){
+                if (this.checkOperador( data[idat][cond[0]],cond[2],cond[1])){
+                   contCond+=1;
+                }
+            }
+            if( oplogico==null || oplogico.toLowerCase()=="or"){
+                if(contCond>0){  
+                    data.splice(idat, 1);
+                    idat-=1;   
+                }
+            }
+            else if(oplogico.toLowerCase()=="and"){
+                if(contCond==condiciones.length){
+                    data.splice(idat, 1)
+                    idat-=1;
+                }
+            }
+            
+        }
+        return data;
+    }
+
+    updateCondicion(condiciones,data,oplogico,ncol,nval){
+        for(var idat=0;idat<data.length;idat++){
+            var contCond=0;
+            for(var cond of condiciones){
+                if (this.checkOperador( data[idat][cond[0]],cond[2],cond[1])){
+                   contCond+=1;
+                }
+            }
+            if( oplogico==null || oplogico.toLowerCase()=="or"){
+                if(contCond>0){  
+                    data[idat][ncol]=nval;
+                    
+                }
+            }
+            else if(oplogico.toLowerCase()=="and"){
+                if(contCond==condiciones.length){
+                    data[idat][ncol]=nval;
+                }
+            }
+            
+        }
+        return data;
+    }
+
 
     obtenerColumnas(tabla){
         var ncols=[];
@@ -147,10 +247,21 @@ class Gestor {
             else{
                 tcol=operacion.split(",");
             }
+
+            var conds=[];
+            var tconds=[];
+            if(datSplit.length>5){
+                tconds=datSplit.slice(5, datSplit.length);
+                conds.push([tconds[0],tconds[1],tconds[2]]);
+                var oplogico=null;
+                if(tconds.length==7){
+                    oplogico=tconds[3];
+                    conds.push([tconds[4],tconds[5],tconds[6]]);
+                }
+                tempTab=this.checkCondicion(conds,tempTab,oplogico);
+            }
+            
             renderizar_tabla(tcol,tempTab);    
-        
-
-
 
         }
         else{
@@ -160,16 +271,123 @@ class Gestor {
     }
     
     borrar(datos){
-        console.log("Crea tabla");
+        var datSplit=datos.split(" ");
+        var nombreTabla=datSplit[1];
+        var tablaTemp=this.obtenerTabla(nombreTabla);
+        if(tablaTemp!=null){
+            $("#nombreTabla").html(nombreTabla);
+            var tempTab = fs.readFileSync('data/'+nombreTabla+'.txt').toString();
+            tempTab = JSON.parse(tempTab);
+            var tcol=[];
+            tcol=this.obtenerColumnas(nombreTabla);
+            
+            var conds=[];
+            var tconds=[];
+            if(datSplit.length>2){
+                tconds=datSplit.slice(3, datSplit.length);
+                conds.push([tconds[0],tconds[1],tconds[2]]);
+                var oplogico=null;
+                if(tconds.length==7){
+                    oplogico=tconds[3];
+                    conds.push([tconds[4],tconds[5],tconds[6]]);
+                }
+                tempTab=this.borrarCondicion(conds,tempTab,oplogico);
+
+
+            }
+            else{
+                tempTab=[];//Borro todo;
+            }
+            fs.writeFile('data/'+nombreTabla+'.txt',JSON.stringify(tempTab), 'utf8',  function(err) {
+                if (err) throw err;
+            });
+            
+            renderizar_tabla(tcol,tempTab);
+
+        }
+        else{
+            console.log("No existe tabla");
+        }
     }
     
     modificar(datos){
-        console.log("Crea tabla");
+        var datSplit=datos.split(" ");
+        var nombreTabla=datSplit[1];
+        var mcol=datSplit[2];
+        var operacion=datSplit[3];
+        var mval=datSplit[4];
+        var tablaTemp=this.obtenerTabla(nombreTabla);
+        if(tablaTemp!=null){
+            $("#nombreTabla").html(nombreTabla);
+            var tempTab = fs.readFileSync('data/'+nombreTabla+'.txt').toString();
+            tempTab = JSON.parse(tempTab);
+            var tcol=[];
+            tcol=this.obtenerColumnas(nombreTabla);
+            
+            var conds=[];
+            var tconds=[];
+            if(datSplit.length>5){
+                tconds=datSplit.slice(6, datSplit.length);
+                conds.push([tconds[0],tconds[1],tconds[2]]);
+                var oplogico=null;
+                if(tconds.length==7){
+                    oplogico=tconds[3];
+                    conds.push([tconds[4],tconds[5],tconds[6]]);
+                }
+                tempTab=this.updateCondicion(conds,tempTab,oplogico,mcol,mval);
+            }
+            fs.writeFile('data/'+nombreTabla+'.txt',JSON.stringify(tempTab), 'utf8',  function(err) {
+                if (err) throw err;
+            });
+            renderizar_tabla(tcol,tempTab);    
+
+        }
+        else{
+            console.log("No existe tabla");
+        }
+
+    }
+
+
+    generarDatos(datos){
+        var datSplit=datos.split(" ");
+        var nombreTabla=datSplit[1];
+        var cantidad = datSplit[2];
+        var tablaTemp=this.obtenerTabla(nombreTabla);
+        if(tablaTemp!=null){
+            $("#nombreTabla").html(nombreTabla);
+            var tempTab = fs.readFileSync('data/'+nombreTabla+'.txt').toString();
+            tempTab = JSON.parse(tempTab);
+            var tcol=this.obtenerColumnas(nombreTabla);
+            var id=tempTab.length;
+
+            for(var i=0;i<parseInt(cantidad);i++){
+                var nobj={};
+                var cont=true;
+                for(var tempcol of tcol){
+                    if(cont){
+                        nobj[tempcol]=(id+i).toString();
+                        cont=false;
+                    }
+                    else{
+                        nobj[tempcol]=tempcol+(id+i).toString();
+                    }
+                    
+                }
+                tempTab.push(nobj);
+            }
+            fs.writeFile('data/'+nombreTabla+'.txt',JSON.stringify(tempTab), 'utf8',  function(err) {
+                if (err) throw err;
+            });
+            
+            renderizar_tabla(tcol,tempTab);
+        }
+
     }
 
     ver(datos){
         var nombreTabla=(datos.split(" "))[1];
-        
+        $("#nombreTabla").html(nombreTabla);
         if(nombreTabla=='tablas'){
             let objCopy = Object.assign({}, this._tablas.tablas);
             for(let obcj in objCopy){
@@ -204,8 +422,13 @@ class Gestor {
         }
     }
     checkSentencia(texto){
+        $("#resultado").empty();
+        $("#nombreTabla").html('');
         var res=texto.split(" ");
         var tipo=res[0].toLowerCase();
+        var find = "'";
+        var re = new RegExp(find, 'g');
+        texto=texto.replace(re, "");
         switch (tipo) {
             case 'crea_tabla':
                 this.crear_tabla(texto);
@@ -225,6 +448,10 @@ class Gestor {
             case 'ver':
                 this.ver(texto.toLowerCase());
                 break;
+            case 'genera':
+                this.generarDatos(texto.toLowerCase());
+                break;
+        
             default:
                 console.log('Error de sintaxis');
         
@@ -278,10 +505,9 @@ const records = [
 ];
 
 document.addEventListener('DOMContentLoaded', (event) => {
-    //cargarTablas();
     
-
-
+    
+    //cargarTablas();
     /*
     for (var i = 0; i < matches.length; i++) {
         var str = matches[i];
