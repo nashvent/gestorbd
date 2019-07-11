@@ -2,12 +2,33 @@ var $ = require("jquery");
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const csv = require('csv-parser');  
 const fs = require('fs');
+const csv2=require('csvtojson')
+const perf = require('execution-time')();
+var BinarySearchTree = require('binary-search-tree').AVLTree
+var bst = new BinarySearchTree();
+/*
+bst.insert(15, 'some data for key 15');
+bst.insert(12, 'something else');
+bst.insert(18, 'hello');
+ 
+bst.insert(18, 'world');
+console.log("inicio");
 
+perf.start('p1');
+for(var i=1;i<1000000;i++){
+    bst.insert(i,"holaaaa");
+}
+var results = perf.stop('p1');
+console.log("sali",results.time/1000);
+//console.log("15",bst.search(15));   // Equal to ['some data for key 15']
+//console.log("18",bst.search(18));   // Equal to ['hello', 'world']
+//console.log("1",bst.search(1));    
+*/
+//bst.prettyPrint();
 var gcol=["nombre","ncol"];
 
 function capturarSentencia(el){
-    //console.log(el.innerHTML);
-    $("#sentencia").val(el.innerHTML)
+    $("#sentencia").val(el.innerHTML);
 }
 
 function renderizar_tabla(columnas,datos){
@@ -40,7 +61,12 @@ function renderizar_tabla(columnas,datos){
     $("#resultado").append(tag_tr);
 }
 
+
+
 class Gestor {
+    
+
+
     constructor() {
         this.cargarTablas();
         this._rexp=/\(([^)]+)\)/g;
@@ -50,19 +76,25 @@ class Gestor {
         var global_data = fs.readFileSync("data/tablas.txt").toString();
         global_data= JSON.parse(global_data);
         console.log("global_data",global_data);
-        this._tablas = global_data;        
-        /*fs.readFile('data/tablas.txt', 'utf8', function readFileCallback(err, data){
-            if (err){
-                console.log(err);
-            } else {
-            var tabs = JSON.parse(data);
-            console.log("tabs",tabs);
-            tablas=tabs;
-            console.log("Tablas",tablas);
-            //obj.table.push({id: 2, square:3}); 
-            //json = JSON.stringify(obj);
-            //fs.writeFile('myjsonfile.json', json, 'utf8', callback); 
-        }});*/    
+        this._tablas = global_data;
+        this._tdatas={}
+        /* Load data */
+        for(var i=0;i<this._tablas.tablas.length;i++){
+            const tempTab=[];
+            const nombre=this._tablas.tablas[i].nombre;
+            console.log("nombre",nombre);
+            var tcol=this.obtenerColumnas(nombre);
+            
+            fs.createReadStream('data/'+nombre+'.csv')
+            .pipe(csv(tcol))
+            .on('data', (data) => tempTab.push(data))
+            .on('end', () => {
+                console.log("nombre dentro",nombre);
+                this._tdatas[nombre]=tempTab;  
+            });
+        }
+        console.log(this._tdatas);
+
     }
 
     checkOperador(a,b,op){
@@ -82,15 +114,14 @@ class Gestor {
     //[ [col,op,val], [col,op,val] ]
     checkCondicion(condiciones,data,oplogico){
         var ndata=[];
-        var borrar=[];
         for(var tdat of data){
             var contCond=0;
             for(var cond of condiciones){
-                //console.log("cond0",cond[0]);
                 if (this.checkOperador( tdat[cond[0]],cond[2],cond[1])){
-                   contCond+=1;
+                    ndata.push(tdat);
                 }
             }
+            /*
             if( oplogico==null || oplogico.toLowerCase()=="or"){
                 if(contCond>0){
                     ndata.push(tdat);
@@ -101,7 +132,7 @@ class Gestor {
                     ndata.push(tdat);
                 }
             }
-            
+            */
         }
         return ndata;
     }
@@ -193,8 +224,8 @@ class Gestor {
         console.log("Nombre de tabla",nombreTabla);
         console.log("columnas",columnas);
         this._tablas.tablas.push({nombre:nombreTabla,columnas:columnas});
-        fs.writeFileSync('data/tablas.txt', JSON.stringify(this._tablas));
-        fs.writeFile('data/'+nombreTabla+'.txt', '[]', 'utf8',  function(err) {
+        fs.writeFileSync('data/tablas.csv', JSON.stringify(this._tablas));
+        fs.writeFile('data/'+nombreTabla+'.csv', '[]', 'utf8',  function(err) {
             if (err) throw err;
         });
     }
@@ -214,7 +245,7 @@ class Gestor {
     
     insertar(datos){
         var nombreTabla=(datos.split(" "))[1];
-        var tempTab = fs.readFileSync('data/'+nombreTabla+'.txt').toString();
+        var tempTab = fs.readFileSync('data/'+nombreTabla+'.csv').toString();
         tempTab = JSON.parse(tempTab);
         
         var matches = datos.match(this._rexp);
@@ -226,7 +257,7 @@ class Gestor {
         var tdatos=str.split(",");
         
         tempTab.push(this.crearObj(tcolumnas,tdatos));
-        fs.writeFile('data/'+nombreTabla+'.txt',JSON.stringify(tempTab), 'utf8',  function(err) {
+        fs.writeFile('data/'+nombreTabla+'.csv',JSON.stringify(tempTab), 'utf8',  function(err) {
             if (err) throw err;
         });
     }
@@ -237,9 +268,49 @@ class Gestor {
         var operacion=datSplit[1];
         var tablaTemp=this.obtenerTabla(nombreTabla);
         if(tablaTemp!=null){
-            $("#nombreTabla").html(nombreTabla);
-            var tempTab = fs.readFileSync('data/'+nombreTabla+'.txt').toString();
-            tempTab = JSON.parse(tempTab);
+            //$("#nombreTabla").html(nombreTabla);
+            //var tempTab = fs.readFileSync('data/'+nombreTabla+'.csv');
+            //tempTab = JSON.parse(tempTab);
+            //var tempTab = csv().fromFile('data/'+nombreTabla+'.csv').jsonObj;
+            //console.log("TempTab",tempTab);
+            var tempTab = [];
+            perf.start('r1');
+            var tcol=this.obtenerColumnas(nombreTabla);
+            fs.createReadStream('data/'+nombreTabla+'.csv')
+            .pipe(csv(tcol))
+            .on('data', (data) => tempTab.push(data))
+            .on('end', () => {
+                
+                var conds=[];
+                var tconds=[];
+                if(datSplit.length>5){
+                    tconds=datSplit.slice(5, datSplit.length);
+                    conds.push([tconds[0],tconds[1],tconds[2]]);
+                    var oplogico=null;
+                    if(tconds.length==7){
+                        oplogico=tconds[3];
+                        conds.push([tconds[4],tconds[5],tconds[6]]);
+                    }
+                
+                    tempTab=this.checkCondicion(conds,tempTab,oplogico);
+                    
+                }
+                const results = perf.stop('r1');
+                $("#tiempoSentencia").html(results.time/1000); 
+                renderizar_tabla(tcol,tempTab);  
+            });
+            
+            /*perf.start('r2');
+            csv2()
+                .fromFile('data/'+nombreTabla+'.csv')
+                .then((jsonObj)=>{
+                    console.log("read 2",jsonObj);
+                    const results = perf.stop('r2');
+                    console.log("tiempo2",results.time); 
+                   
+                })
+            */
+            /*
             var tcol=[];
             if("*"==operacion){
                 tcol=this.obtenerColumnas(nombreTabla);
@@ -262,6 +333,7 @@ class Gestor {
             }
             
             renderizar_tabla(tcol,tempTab);    
+            */
 
         }
         else{
@@ -275,8 +347,8 @@ class Gestor {
         var nombreTabla=datSplit[1];
         var tablaTemp=this.obtenerTabla(nombreTabla);
         if(tablaTemp!=null){
-            $("#nombreTabla").html(nombreTabla);
-            var tempTab = fs.readFileSync('data/'+nombreTabla+'.txt').toString();
+            //$("#nombreTabla").html(nombreTabla);
+            var tempTab = fs.readFileSync('data/'+nombreTabla+'.csv').toString();
             tempTab = JSON.parse(tempTab);
             var tcol=[];
             tcol=this.obtenerColumnas(nombreTabla);
@@ -298,7 +370,7 @@ class Gestor {
             else{
                 tempTab=[];//Borro todo;
             }
-            fs.writeFile('data/'+nombreTabla+'.txt',JSON.stringify(tempTab), 'utf8',  function(err) {
+            fs.writeFile('data/'+nombreTabla+'.csv',JSON.stringify(tempTab), 'utf8',  function(err) {
                 if (err) throw err;
             });
             
@@ -318,8 +390,8 @@ class Gestor {
         var mval=datSplit[4];
         var tablaTemp=this.obtenerTabla(nombreTabla);
         if(tablaTemp!=null){
-            $("#nombreTabla").html(nombreTabla);
-            var tempTab = fs.readFileSync('data/'+nombreTabla+'.txt').toString();
+            //$("#nombreTabla").html(nombreTabla);
+            var tempTab = fs.readFileSync('data/'+nombreTabla+'.csv').toString();
             tempTab = JSON.parse(tempTab);
             var tcol=[];
             tcol=this.obtenerColumnas(nombreTabla);
@@ -336,7 +408,7 @@ class Gestor {
                 }
                 tempTab=this.updateCondicion(conds,tempTab,oplogico,mcol,mval);
             }
-            fs.writeFile('data/'+nombreTabla+'.txt',JSON.stringify(tempTab), 'utf8',  function(err) {
+            fs.writeFile('data/'+nombreTabla+'.csv',JSON.stringify(tempTab), 'utf8',  function(err) {
                 if (err) throw err;
             });
             renderizar_tabla(tcol,tempTab);    
@@ -355,12 +427,12 @@ class Gestor {
         var cantidad = datSplit[2];
         var tablaTemp=this.obtenerTabla(nombreTabla);
         if(tablaTemp!=null){
-            $("#nombreTabla").html(nombreTabla);
-            var tempTab = fs.readFileSync('data/'+nombreTabla+'.txt').toString();
-            tempTab = JSON.parse(tempTab);
+            //$("#nombreTabla").html(nombreTabla);
+            //var tempTab = fs.readFileSync('data/'+nombreTabla+'.csv').toString();
+            //tempTab = JSON.parse(tempTab);
+            var tempTab = [];
             var tcol=this.obtenerColumnas(nombreTabla);
-            var id=tempTab.length;
-
+            var id=1;
             for(var i=0;i<parseInt(cantidad);i++){
                 var nobj={};
                 var cont=true;
@@ -376,18 +448,25 @@ class Gestor {
                 }
                 tempTab.push(nobj);
             }
-            fs.writeFile('data/'+nombreTabla+'.txt',JSON.stringify(tempTab), 'utf8',  function(err) {
-                if (err) throw err;
+            console.log("header",tcol);
+            var nombreTotalTabla= 'data/'+nombreTabla+'.csv';
+            var csvWriter = createCsvWriter({  
+                path: nombreTotalTabla,
+                header:tcol
             });
-            
-            renderizar_tabla(tcol,tempTab);
+            csvWriter.writeRecords(tempTab).then(()=> console.log('Archivo actualizado'));
+            /*
+            fs.writeFile('data/'+nombreTabla+'.csv',JSON.stringify(tempTab), 'utf8',  function(err) {
+                if (err) throw err;
+            });*/
+            //renderizar_tabla(tcol,tempTab);
         }
 
     }
 
     ver(datos){
         var nombreTabla=(datos.split(" "))[1];
-        $("#nombreTabla").html(nombreTabla);
+        //$("#nombreTabla").html(nombreTabla);
         if(nombreTabla=='tablas'){
             let objCopy = Object.assign({}, this._tablas.tablas);
             for(let obcj in objCopy){
@@ -423,7 +502,9 @@ class Gestor {
     }
     checkSentencia(texto){
         $("#resultado").empty();
-        $("#nombreTabla").html('');
+        //$("#nombreTabla").html('');
+        $("#sentenciaTabla").html(texto);
+        $("#tiempoSentencia").html("");
         var res=texto.split(" ");
         var tipo=res[0].toLowerCase();
         var find = "'";
@@ -490,19 +571,6 @@ function leerSentencia(){
     gestor.checkSentencia(texto);
     $("#sentencia").val("");
 }
-
-const csvWriter = createCsvWriter({
-    path: 'file.csv',
-    header: [
-        {id: 'name', title: 'NAME'},
-        {id: 'lang', title: 'LANGUAGE'}
-    ]
-});
-
-const records = [
-    {name: 'Bob',  lang: 'French, English'},
-    {name: 'Mary', lang: 'English'}
-];
 
 document.addEventListener('DOMContentLoaded', (event) => {
     

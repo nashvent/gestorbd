@@ -33,7 +33,8 @@
           
       </div>
       <div class="container-fluid">
-        <p>Nombre tabla: <b><span id="nombreTabla"></span></b>  </p>
+        <p>Comando: <b><span id="sentenciaTabla"></span></b> </p>
+        <p>Tiempo: <b><span id="tiempoSentencia"></span></b> seg.</p>
         <div class="row">
           <div class="col-9">
               <table class="table table-sm table-striped" id="resultado">
@@ -59,20 +60,22 @@
                 <tr>
                   <td onclick="capturarSentencia(this)">VER tablas</td>
                 </tr>
+                <!--
                 <tr>
                   <td onclick="capturarSentencia(this)">CREA_TABLA estudiante (codigo,INT;nombre,VARCHAR 10)</td>
                 </tr>
+                -->
                 <tr>
-                  <td onclick="capturarSentencia(this)">INSERTA estudiante (codigo, nombre) VALORES (10, 'RENZO')</td>
+                  <td onclick="capturarSentencia(this)">INSERTA estudiante (codigo, nombre) VALORES (10,'RENZO')</td>
                 </tr>
                 <tr>
-                  <td onclick="capturarSentencia(this)">SELECCIONA * DESDE estudiante  DONDE codigo = 2 AND nombre = 'renzo'</td>
+                  <td onclick="capturarSentencia(this)">SELECCIONA * DESDE estudiante_1 DONDE id = 2 </td>
                 </tr>
                 <tr>
-                  <td onclick="capturarSentencia(this)">BORRA estudiante DONDE codigo = 2</td>
+                  <td onclick="capturarSentencia(this)">BORRA estudiante_1 DONDE id = 2</td>
                 </tr>
                 <tr>
-                  <td onclick="capturarSentencia(this)">GENERA estudiante 40000</td>
+                  <td onclick="capturarSentencia(this)">GENERA estudiante_1 10</td>
                 </tr>
               </tbody>
             </table>
