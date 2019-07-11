@@ -64,8 +64,6 @@ function renderizar_tabla(columnas,datos){
 
 
 class Gestor {
-    
-
 
     constructor() {
         this.cargarTablas();
@@ -77,24 +75,35 @@ class Gestor {
         global_data= JSON.parse(global_data);
         console.log("global_data",global_data);
         this._tablas = global_data;
-        this._tdatas={}
+        this._tdatas={};
+        this._tindex={};
         /* Load data */
         for(var i=0;i<this._tablas.tablas.length;i++){
             const tempTab=[];
             const nombre=this._tablas.tablas[i].nombre;
             console.log("nombre",nombre);
-            var tcol=this.obtenerColumnas(nombre);
+            const tcol=this.obtenerColumnas(nombre);
             
             fs.createReadStream('data/'+nombre+'.csv')
             .pipe(csv(tcol))
             .on('data', (data) => tempTab.push(data))
             .on('end', () => {
-                console.log("nombre dentro",nombre);
+                
                 this._tdatas[nombre]=tempTab;  
+                this.generateIndex(tempTab,nombre);
+                console.log("Datos Cargados de "+nombre);
             });
         }
-        console.log(this._tdatas);
+        console.log("tindex",this._tindex);
+    }
 
+    generateIndex(tabla,nombre){
+        var bst = new BinarySearchTree();
+        for(var ix=0;ix<tabla.length;ix++){
+            var el=tabla[ix];
+            bst.insert(el.id,ix);
+        }
+        this._tindex[nombre]=bst;
     }
 
     checkOperador(a,b,op){
@@ -112,9 +121,35 @@ class Gestor {
     }
 
     //[ [col,op,val], [col,op,val] ]
-    checkCondicion(condiciones,data,oplogico){
+    checkCondicion(condiciones,data){
         var ndata=[];
         for(var tdat of data){
+            var contCond=0;
+            for(var cond of condiciones){
+                if (this.checkOperador( tdat[cond[0]],cond[2],cond[1])){
+                    ndata.push(tdat);
+                }
+            }
+            /*
+            if( oplogico==null || oplogico.toLowerCase()=="or"){
+                if(contCond>0){
+                    ndata.push(tdat);
+                }
+            }
+            else if(oplogico.toLowerCase()=="and"){
+                if(contCond==condiciones.length){
+                    ndata.push(tdat);
+                }
+            }
+            */
+        }
+        return ndata;
+    }
+
+    checkCondicionIndex(condiciones,data,indices){
+        var ndata=[];
+        for(var idx of indices){
+            var tdat=data[idx];
             var contCond=0;
             for(var cond of condiciones){
                 if (this.checkOperador( tdat[cond[0]],cond[2],cond[1])){
@@ -245,9 +280,9 @@ class Gestor {
     
     insertar(datos){
         var nombreTabla=(datos.split(" "))[1];
-        var tempTab = fs.readFileSync('data/'+nombreTabla+'.csv').toString();
-        tempTab = JSON.parse(tempTab);
-        
+        //var tempTab = fs.readFileSync('data/'+nombreTabla+'.csv').toString();
+        //tempTab = JSON.parse(tempTab);
+        var tempTab = this._tdatas[nombreTabla];
         var matches = datos.match(this._rexp);
         var str = matches[0]
         str= str.substring(1, str.length - 1)
@@ -255,11 +290,24 @@ class Gestor {
         str = matches[1]
         str= str.substring(1, str.length - 1)
         var tdatos=str.split(",");
-        
-        tempTab.push(this.crearObj(tcolumnas,tdatos));
-        fs.writeFile('data/'+nombreTabla+'.csv',JSON.stringify(tempTab), 'utf8',  function(err) {
-            if (err) throw err;
+        var tcol=this.obtenerColumnas(nombreTabla);
+        var nobjeto=this.crearObj(tcolumnas,tdatos);
+        perf.start('insertar');
+        this._tindex[nombreTabla].insert(nobjeto.id,tempTab.length);
+        tempTab.push(nobjeto);
+
+        const results = perf.stop('insertar');
+        $("#tiempoSentencia").html(Number(results.time/1000)); 
+        var nombreTotalTabla= 'data/'+nombreTabla+'.csv';
+        var csvWriter = createCsvWriter({  
+            path: nombreTotalTabla,
+            header:tcol
         });
+        csvWriter.writeRecords(tempTab).then(()=> console.log('Archivo actualizado'));
+        
+        /*fs.writeFile('data/'+nombreTabla+'.csv',JSON.stringify(tempTab), 'utf8',  function(err) {
+            if (err) throw err;
+        });*/
     }
     
     seleccionar(datos){
@@ -268,73 +316,37 @@ class Gestor {
         var operacion=datSplit[1];
         var tablaTemp=this.obtenerTabla(nombreTabla);
         if(tablaTemp!=null){
-            //$("#nombreTabla").html(nombreTabla);
-            //var tempTab = fs.readFileSync('data/'+nombreTabla+'.csv');
-            //tempTab = JSON.parse(tempTab);
-            //var tempTab = csv().fromFile('data/'+nombreTabla+'.csv').jsonObj;
-            //console.log("TempTab",tempTab);
-            var tempTab = [];
             perf.start('r1');
-            var tcol=this.obtenerColumnas(nombreTabla);
-            fs.createReadStream('data/'+nombreTabla+'.csv')
-            .pipe(csv(tcol))
-            .on('data', (data) => tempTab.push(data))
-            .on('end', () => {
-                
-                var conds=[];
-                var tconds=[];
-                if(datSplit.length>5){
-                    tconds=datSplit.slice(5, datSplit.length);
-                    conds.push([tconds[0],tconds[1],tconds[2]]);
-                    var oplogico=null;
-                    if(tconds.length==7){
-                        oplogico=tconds[3];
-                        conds.push([tconds[4],tconds[5],tconds[6]]);
-                    }
-                
-                    tempTab=this.checkCondicion(conds,tempTab,oplogico);
-                    
-                }
-                const results = perf.stop('r1');
-                $("#tiempoSentencia").html(results.time/1000); 
-                renderizar_tabla(tcol,tempTab);  
-            });
             
-            /*perf.start('r2');
-            csv2()
-                .fromFile('data/'+nombreTabla+'.csv')
-                .then((jsonObj)=>{
-                    console.log("read 2",jsonObj);
-                    const results = perf.stop('r2');
-                    console.log("tiempo2",results.time); 
-                   
-                })
-            */
-            /*
-            var tcol=[];
-            if("*"==operacion){
-                tcol=this.obtenerColumnas(nombreTabla);
-            }
-            else{
-                tcol=operacion.split(",");
-            }
-
+            var tcol=this.obtenerColumnas(nombreTabla);
+            var tempTab = this._tdatas[nombreTabla];
             var conds=[];
             var tconds=[];
             if(datSplit.length>5){
                 tconds=datSplit.slice(5, datSplit.length);
                 conds.push([tconds[0],tconds[1],tconds[2]]);
                 var oplogico=null;
-                if(tconds.length==7){
+                /*if(tconds.length==7){
                     oplogico=tconds[3];
                     conds.push([tconds[4],tconds[5],tconds[6]]);
+                }*/
+                var indices=[];
+                if(datSplit[datSplit.length-1]=="index"){
+                    // SELECCIONA * DESDE estudiante_1 DONDE id = 2 index
+                    indices=this._tindex[nombreTabla].search(tconds[2]);
                 }
-                tempTab=this.checkCondicion(conds,tempTab,oplogico);
-            }
-            
-            renderizar_tabla(tcol,tempTab);    
-            */
 
+                if(indices.length>0){
+                    tempTab=this.checkCondicionIndex(conds,tempTab,indices);
+                }
+                else{
+                    tempTab=this.checkCondicion(conds,tempTab);
+                }    
+            }
+            const results = perf.stop('r1');
+            $("#tiempoSentencia").html(Number(results.time/1000)); 
+            renderizar_tabla(tcol,tempTab);  
+            
         }
         else{
             console.log("No existe tabla");
@@ -347,14 +359,15 @@ class Gestor {
         var nombreTabla=datSplit[1];
         var tablaTemp=this.obtenerTabla(nombreTabla);
         if(tablaTemp!=null){
-            //$("#nombreTabla").html(nombreTabla);
-            var tempTab = fs.readFileSync('data/'+nombreTabla+'.csv').toString();
-            tempTab = JSON.parse(tempTab);
+            //var tempTab = fs.readFileSync('data/'+nombreTabla+'.csv').toString();
+            //tempTab = JSON.parse(tempTab);
+            var tempTab = this._tdatas[nombreTabla];
             var tcol=[];
             tcol=this.obtenerColumnas(nombreTabla);
             
             var conds=[];
             var tconds=[];
+            perf.start('borrar');
             if(datSplit.length>2){
                 tconds=datSplit.slice(3, datSplit.length);
                 conds.push([tconds[0],tconds[1],tconds[2]]);
@@ -370,11 +383,18 @@ class Gestor {
             else{
                 tempTab=[];//Borro todo;
             }
-            fs.writeFile('data/'+nombreTabla+'.csv',JSON.stringify(tempTab), 'utf8',  function(err) {
-                if (err) throw err;
+            this.generateIndex(tempTab,nombreTabla);
+
+            const results = perf.stop('borrar');
+            $("#tiempoSentencia").html(Number(results.time/1000)); 
+            var nombreTotalTabla= 'data/'+nombreTabla+'.csv';
+            var csvWriter = createCsvWriter({  
+                path: nombreTotalTabla,
+                header:tcol
             });
+            csvWriter.writeRecords(tempTab).then(()=> console.log('Archivo actualizado'));
             
-            renderizar_tabla(tcol,tempTab);
+            //renderizar_tabla(tcol,tempTab);
 
         }
         else{
@@ -391,8 +411,9 @@ class Gestor {
         var tablaTemp=this.obtenerTabla(nombreTabla);
         if(tablaTemp!=null){
             //$("#nombreTabla").html(nombreTabla);
-            var tempTab = fs.readFileSync('data/'+nombreTabla+'.csv').toString();
-            tempTab = JSON.parse(tempTab);
+            //var tempTab = fs.readFileSync('data/'+nombreTabla+'.csv').toString();
+            //tempTab = JSON.parse(tempTab);
+            var tempTab = this._tdatas[nombreTabla];
             var tcol=[];
             tcol=this.obtenerColumnas(nombreTabla);
             
@@ -408,10 +429,16 @@ class Gestor {
                 }
                 tempTab=this.updateCondicion(conds,tempTab,oplogico,mcol,mval);
             }
-            fs.writeFile('data/'+nombreTabla+'.csv',JSON.stringify(tempTab), 'utf8',  function(err) {
+            /*fs.writeFile('data/'+nombreTabla+'.csv',JSON.stringify(tempTab), 'utf8',  function(err) {
                 if (err) throw err;
             });
-            renderizar_tabla(tcol,tempTab);    
+            renderizar_tabla(tcol,tempTab);*/
+            var nombreTotalTabla= 'data/'+nombreTabla+'.csv';
+            var csvWriter = createCsvWriter({  
+                path: nombreTotalTabla,
+                header:tcol
+            });
+            csvWriter.writeRecords(tempTab).then(()=> console.log('Archivo actualizado'));    
 
         }
         else{
@@ -448,7 +475,6 @@ class Gestor {
                 }
                 tempTab.push(nobj);
             }
-            console.log("header",tcol);
             var nombreTotalTabla= 'data/'+nombreTabla+'.csv';
             var csvWriter = createCsvWriter({  
                 path: nombreTotalTabla,
