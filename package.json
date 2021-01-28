@@ -16,7 +16,7 @@
   ],
   "author": "nashvent",
   "devDependencies": {
-    "electron": "^5.0.0"
+    "electron": "^9.4.0"
   },
   "dependencies": {
     "alerts": "^0.1.3",
